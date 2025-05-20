@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -14,10 +15,12 @@ interface PropertyFilterSortProps {
   onFilterChange: (filteredProperties: Property[]) => void;
 }
 
+const ALL_LOCATIONS_VALUE = "__ALL_LOCATIONS__"; // Special value for "All Locations" item
+
 export function PropertyFilterSort({ properties, onFilterChange }: PropertyFilterSortProps) {
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(''); // Empty string means all locations
   const [bedrooms, setBedrooms] = useState('');
   const [sortBy, setSortBy] = useState('dateAdded_desc'); // Default sort: newest first
 
@@ -35,7 +38,7 @@ export function PropertyFilterSort({ properties, onFilterChange }: PropertyFilte
     if (priceMax) {
       filtered = filtered.filter(p => p.price <= parseFloat(priceMax));
     }
-    if (location) {
+    if (location) { // If location is not an empty string, filter by it
       filtered = filtered.filter(p => p.location === location);
     }
     if (bedrooms) {
@@ -64,21 +67,21 @@ export function PropertyFilterSort({ properties, onFilterChange }: PropertyFilte
   const resetFilters = () => {
     setPriceMin('');
     setPriceMax('');
-    setLocation('');
+    setLocation(''); // Reset to empty string for "all locations"
     setBedrooms('');
     setSortBy('dateAdded_desc');
-    onFilterChange(properties); // Reset to original, unsorted list which will be sorted by default
     // Re-apply default sort
     const defaultSorted = [...properties].sort((a,b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
     onFilterChange(defaultSorted);
   };
 
-  // Apply filters whenever a filter state changes
-  // This could be debounced in a real app for performance
-  // For now, direct application on button click
-  // Or, useEffect to apply filters automatically:
-  // React.useEffect(() => { applyFiltersAndSort(); }, [priceMin, priceMax, location, bedrooms, sortBy, properties]);
-  // But for now, manual apply button is fine.
+  const handleLocationChange = (selectedValue: string) => {
+    if (selectedValue === ALL_LOCATIONS_VALUE) {
+      setLocation(''); // Set actual state to empty string for "All Locations"
+    } else {
+      setLocation(selectedValue);
+    }
+  };
 
   return (
     <Card className="mb-8 shadow-md">
@@ -100,12 +103,12 @@ export function PropertyFilterSort({ properties, onFilterChange }: PropertyFilte
           </div>
           <div>
             <Label htmlFor="location">Location</Label>
-            <Select value={location} onValueChange={setLocation}>
+            <Select value={location === '' ? ALL_LOCATIONS_VALUE : location} onValueChange={handleLocationChange}>
               <SelectTrigger id="location">
                 <SelectValue placeholder="All Locations" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Locations</SelectItem>
+                <SelectItem value={ALL_LOCATIONS_VALUE}>All Locations</SelectItem>
                 {uniqueLocations.map(loc => (
                   <SelectItem key={loc} value={loc}>{loc}</SelectItem>
                 ))}
