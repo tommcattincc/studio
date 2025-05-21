@@ -61,7 +61,13 @@ export default function HomePage() {
         Discover Your Next <span className="text-primary">Home</span>
       </h1>
       <PropertyFilterSort properties={allProperties} onFilterChange={handleFilterChange} />
-      <PropertyList properties={displayedProperties} />
+      
+      <div className="pt-4"> {/* Added padding top for separation */}
+        <h2 className="text-2xl font-semibold mb-6 text-center md:text-left">
+          Explore Our Listings
+        </h2>
+        <PropertyList properties={displayedProperties} />
+      </div>
     </div>
   );
 }
