@@ -38,7 +38,7 @@ export function PropertyFilterSort({ properties, onFilterChange }: PropertyFilte
     if (priceMax) {
       filtered = filtered.filter(p => p.price <= parseFloat(priceMax));
     }
-    if (location) { // If location is not an empty string, filter by it
+    if (location && location !== ALL_LOCATIONS_VALUE) { // Filter if location is set and not the special 'all' value
       filtered = filtered.filter(p => p.location === location);
     }
     if (bedrooms) {
@@ -67,10 +67,9 @@ export function PropertyFilterSort({ properties, onFilterChange }: PropertyFilte
   const resetFilters = () => {
     setPriceMin('');
     setPriceMax('');
-    setLocation(''); // Reset to empty string for "all locations"
+    setLocation(''); 
     setBedrooms('');
     setSortBy('dateAdded_desc');
-    // Re-apply default sort
     const defaultSorted = [...properties].sort((a,b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
     onFilterChange(defaultSorted);
   };
@@ -82,6 +81,10 @@ export function PropertyFilterSort({ properties, onFilterChange }: PropertyFilte
       setLocation(selectedValue);
     }
   };
+  
+  // When using the Select component, its value prop should reflect the actual state.
+  // If location state is '', it means "All Locations", so Select's value should be ALL_LOCATIONS_VALUE.
+  const selectValueForLocation = location === '' ? ALL_LOCATIONS_VALUE : location;
 
   return (
     <Card className="mb-8 shadow-md">
@@ -103,7 +106,7 @@ export function PropertyFilterSort({ properties, onFilterChange }: PropertyFilte
           </div>
           <div>
             <Label htmlFor="location">Location</Label>
-            <Select value={location === '' ? ALL_LOCATIONS_VALUE : location} onValueChange={handleLocationChange}>
+            <Select value={selectValueForLocation} onValueChange={handleLocationChange}>
               <SelectTrigger id="location">
                 <SelectValue placeholder="All Locations" />
               </SelectTrigger>

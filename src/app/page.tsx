@@ -62,7 +62,7 @@ export default function HomePage() {
       </h1>
       <PropertyFilterSort properties={allProperties} onFilterChange={handleFilterChange} />
       
-      <div className="pt-4"> {/* Added padding top for separation */}
+      <div className="pt-4">
         <h2 className="text-2xl font-semibold mb-6 text-center md:text-left">
           Explore Our Listings
         </h2>
