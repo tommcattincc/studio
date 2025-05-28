@@ -10,7 +10,7 @@ export function Header() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', label: 'Adilla', icon: <Home className="h-6 w-6" />, isLogo: true },
+    // The logo item is now handled directly in the JSX for simplicity
     { href: '/admin', label: 'Admin', icon: <ShieldCheck className="h-5 w-5" /> },
   ];
 
@@ -18,14 +18,14 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="container flex h-16 max-w-screen-2xl items-center justify-between">
         <Link href="/" className="mr-6 flex items-center space-x-2">
-          <Home className="h-7 w-7 text-primary" />
+          {/* Icon removed from here */}
           <span className="font-bold text-xl text-primary sm:inline-block">
             Adilla
           </span>
         </Link>
         
         <nav className="flex items-center gap-4 text-sm lg:gap-6">
-          {navItems.filter(item => !item.isLogo).map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
