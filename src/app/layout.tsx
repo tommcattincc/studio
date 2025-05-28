@@ -12,7 +12,7 @@ const fontSans = FontSans({
 })
 
 export const metadata: Metadata = {
-  title: 'PropSpot - Find Your Next Property',
+  title: 'Adilla - Find Your Next Property',
   description: 'Browse houses, apartments, and Airbnb rentals. Manage your properties with ease.',
 };
 
