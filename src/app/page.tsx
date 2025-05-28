@@ -13,12 +13,13 @@ function HeroSection() {
   return (
     <div className="relative h-[500px] md:h-[600px] w-full mb-12 rounded-lg overflow-hidden shadow-xl">
       <Image
-        src="https://placehold.co/1920x800.png"
-        alt="Scenic landscape background"
+        src="/images/hero-background.jpg" 
+        alt="Modern open-plan living space with kitchen and large windows"
         layout="fill"
         objectFit="cover"
         className="z-0"
-        data-ai-hint="mountain landscape"
+        priority // Add priority to hint Next.js to load this LCP image faster
+        data-ai-hint="modern interior"
       />
       <div className="absolute inset-0 bg-black/50 z-10 flex flex-col items-center justify-center text-center p-4">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4 tracking-tight">
@@ -59,7 +60,7 @@ export default function HomePage() {
     setDisplayedProperties(filteredProperties);
   };
 
-  if (isLoading && !allProperties.length) { // Keep hero visible even during initial full load
+  if (isLoading && !allProperties.length) { 
     return (
       <>
         <HeroSection />
