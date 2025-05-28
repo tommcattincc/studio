@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -9,8 +10,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal } from 'lucide-react';
+
+// Hardcoded password for demonstration.
+// IN A REAL APPLICATION, NEVER DO THIS. USE A PROPER AUTHENTICATION SYSTEM.
+const MOCK_PASSWORD = 'admin123';
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordAttempt, setPasswordAttempt] = useState('');
+  const [authError, setAuthError] = useState('');
+  
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -18,7 +32,6 @@ export default function AdminPage() {
     setIsLoading(true);
     try {
       const props = await getProperties();
-      // Sort by date added, newest first
       const sortedProps = [...props].sort((a,b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
       setProperties(sortedProps);
     } catch (error) {
@@ -29,13 +42,73 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    fetchAdminProperties();
-  }, [fetchAdminProperties]);
+    if (isAuthenticated) {
+      fetchAdminProperties();
+    }
+  }, [isAuthenticated, fetchAdminProperties]);
 
   const handlePropertyAdded = () => {
-    // Re-fetch properties after a new one is added
-    fetchAdminProperties();
+    if (isAuthenticated) {
+      fetchAdminProperties();
+    }
   };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordAttempt === MOCK_PASSWORD) {
+      setIsAuthenticated(true);
+      setAuthError('');
+    } else {
+      setAuthError('Incorrect password. Please try again.');
+      setIsAuthenticated(false);
+    }
+    setPasswordAttempt(''); 
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Card className="w-full max-w-md p-6 shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Admin Access Required</CardTitle>
+            <CardDescription className="text-center">
+              This page is for administrators only.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert variant="destructive" className="mb-6">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Development Mode Security Notice</AlertTitle>
+              <AlertDescription>
+                This is a mock password prompt for demonstration purposes only.
+                <strong> Do not use this method in a production environment.</strong>
+                A proper authentication system (e.g., Firebase Auth, NextAuth.js) is required for real security.
+                <br /> Enter '<strong>{MOCK_PASSWORD}</strong>' to proceed.
+              </AlertDescription>
+            </Alert>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={passwordAttempt}
+                  onChange={(e) => setPasswordAttempt(e.target.value)}
+                  placeholder="Enter password"
+                  required
+                  className="mt-1"
+                />
+              </div>
+              {authError && <p className="text-sm font-medium text-destructive">{authError}</p>}
+              <Button type="submit" className="w-full">
+                Login
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

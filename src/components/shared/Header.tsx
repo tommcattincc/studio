@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -9,7 +10,7 @@ export function Header() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/', label: 'PropSpot', icon: <Home className="h-6 w-6" />, isLogo: true },
+    { href: '/', label: 'Adilla', icon: <Home className="h-6 w-6" />, isLogo: true },
     { href: '/admin', label: 'Admin', icon: <ShieldCheck className="h-5 w-5" /> },
   ];
 
@@ -19,7 +20,7 @@ export function Header() {
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Home className="h-7 w-7 text-primary" />
           <span className="font-bold text-xl text-primary sm:inline-block">
-            PropSpot
+            Adilla
           </span>
         </Link>
         
