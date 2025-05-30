@@ -1,14 +1,91 @@
+
+'use client';
 import Image from 'next/image';
 import type { Property } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BedDouble, Bath, LocateFixed, Home as HomeIcon, DollarSign, Maximize } from 'lucide-react';
+import { BedDouble, Bath, LocateFixed, Home as HomeIcon, Maximize, Phone, User, Send } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { createBookingAction } from '@/lib/actions';
 
 interface PropertyCardProps {
   property: Property;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
+  const { toast } = useToast();
+  const [userName, setUserName] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [isBooking, setIsBooking] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleBookingSubmit = async () => {
+    if (!userName || !userPhone) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter your name and phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsBooking(true);
+    try {
+      const result = await createBookingAction({
+        propertyId: property.id,
+        propertyName: property.name,
+        userName,
+        userPhone,
+      });
+
+      if (result?.errors) {
+        toast({
+          title: "Booking Failed",
+          description: result.message || "Please check your input.",
+          variant: "destructive",
+        });
+      } else if (result?.message.includes('Error') || result?.message.includes('Failed')) {
+        toast({
+          title: "Booking Failed",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+       else {
+        toast({
+          title: "Booking Successful!",
+          description: `You've requested to book ${property.name}. We'll contact you shortly.`,
+        });
+        setIsDialogOpen(false); // Close dialog on success
+        setUserName(''); // Reset fields
+        setUserPhone('');
+      }
+    } catch (error) {
+      toast({
+        title: "Booking Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+
   return (
     <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
       <CardHeader className="p-0 relative">
@@ -47,7 +124,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
 
         <p className="text-sm text-foreground/80 line-clamp-3 mb-3">{property.description}</p>
         
-        {property.amenities.length > 0 && (
+        {property.amenities && property.amenities.length > 0 && (
           <div className="mb-2">
             <h4 className="text-xs font-semibold text-muted-foreground mb-1">Amenities:</h4>
             <div className="flex flex-wrap gap-1">
@@ -66,9 +143,54 @@ export function PropertyCard({ property }: PropertyCardProps) {
             ${property.price.toLocaleString()}
             {property.propertyType.toLowerCase().includes('airbnb') || property.propertyType.toLowerCase().includes('rental') ? <span className="text-xs font-normal text-muted-foreground">/month</span> : ''}
           </p>
-          <Badge variant="default">
-            {new Date(property.dateAdded).toLocaleDateString()}
-          </Badge>
+          
+          <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button variant="default" size="sm">
+                <Send className="mr-2 h-4 w-4" /> Book
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Book: {property.name}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Enter your details to request a booking. We will contact you to confirm.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-4 py-2">
+                <div>
+                  <Label htmlFor="userName" className="flex items-center mb-1">
+                    <User className="w-4 h-4 mr-2 text-muted-foreground" /> Your Name
+                  </Label>
+                  <Input 
+                    id="userName" 
+                    placeholder="Enter your full name" 
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)} 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="userPhone" className="flex items-center mb-1">
+                    <Phone className="w-4 h-4 mr-2 text-muted-foreground" /> Your Phone
+                  </Label>
+                  <Input 
+                    id="userPhone" 
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    value={userPhone}
+                    onChange={(e) => setUserPhone(e.target.value)}
+                  />
+                </div>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => { setUserName(''); setUserPhone('');}}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleBookingSubmit} disabled={isBooking}>
+                  {isBooking ? 'Submitting...' : 'Submit Booking Request'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
         </div>
       </CardFooter>
     </Card>

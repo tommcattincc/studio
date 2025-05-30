@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { PropertyForm } from '@/components/admin/PropertyForm';
-import type { Property } from '@/lib/types';
-import { getProperties } from '@/lib/actions';
+import type { Property, Booking } from '@/lib/types';
+import { getPropertiesRealtime, getBookingsRealtime } from '@/lib/data'; // Using realtime functions
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';
@@ -14,10 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal } from 'lucide-react';
+import { Terminal, Home, UserCircle, PhoneCall, CalendarDays } from 'lucide-react';
 
 // Hardcoded password for demonstration.
-// IN A REAL APPLICATION, NEVER DO THIS. USE A PROPER AUTHENTICATION SYSTEM.
 const MOCK_PASSWORD = 'admin123';
 
 export default function AdminPage() {
@@ -26,31 +25,35 @@ export default function AdminPage() {
   const [authError, setAuthError] = useState('');
   
   const [properties, setProperties] = useState<Property[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchAdminProperties = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const props = await getProperties();
-      const sortedProps = [...props].sort((a,b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
-      setProperties(sortedProps);
-    } catch (error) {
-      console.error("Failed to fetch properties for admin:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(true);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchAdminProperties();
-    }
-  }, [isAuthenticated, fetchAdminProperties]);
+    if (!isAuthenticated) return;
+
+    setIsLoadingProperties(true);
+    const unsubscribeProperties = getPropertiesRealtime((props) => {
+      setProperties(props);
+      setIsLoadingProperties(false);
+    });
+
+    setIsLoadingBookings(true);
+    const unsubscribeBookings = getBookingsRealtime((bks) => {
+      setBookings(bks);
+      setIsLoadingBookings(false);
+    });
+
+    return () => {
+      unsubscribeProperties();
+      unsubscribeBookings();
+    };
+  }, [isAuthenticated]);
 
   const handlePropertyAdded = () => {
-    if (isAuthenticated) {
-      fetchAdminProperties();
-    }
+    // Realtime listener should handle updates, so this might not be strictly necessary
+    // unless an immediate re-sort or specific UI update is desired.
+    // For now, rely on Firestore realtime updates.
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -82,7 +85,7 @@ export default function AdminPage() {
               <AlertDescription>
                 This is a mock password prompt for demonstration purposes only.
                 <strong> Do not use this method in a production environment.</strong>
-                A proper authentication system (e.g., Firebase Auth, NextAuth.js) is required for real security.
+                A proper authentication system is required for real security.
                 <br /> Enter '<strong>{MOCK_PASSWORD}</strong>' to proceed.
               </AlertDescription>
             </Alert>
@@ -122,10 +125,10 @@ export default function AdminPage() {
           <CardDescription>Manage your existing property listings.</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoadingProperties ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4 p-2 border rounded">
+                <div key={`prop-skel-${i}`} className="flex items-center space-x-4 p-2 border rounded">
                   <Skeleton className="h-12 w-12 rounded-md" />
                   <div className="flex-1 space-y-1">
                     <Skeleton className="h-4 w-3/4" />
@@ -169,6 +172,52 @@ export default function AdminPage() {
                     <TableCell>{prop.location}</TableCell>
                     <TableCell className="text-right">${prop.price.toLocaleString()}</TableCell>
                     <TableCell>{new Date(prop.dateAdded).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-12 shadow-lg">
+        <CardHeader>
+          <CardTitle>Recent Bookings</CardTitle>
+          <CardDescription>View recent booking requests from users.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingBookings ? (
+             <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={`book-skel-${i}`} className="flex items-center space-x-4 p-2 border rounded">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                   <Skeleton className="h-3 w-1/4" />
+                </div>
+              ))}
+            </div>
+          ) : bookings.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">No bookings yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead><Home className="inline-block w-4 h-4 mr-1" /> Property Name</TableHead>
+                  <TableHead><UserCircle className="inline-block w-4 h-4 mr-1" /> User Name</TableHead>
+                  <TableHead><PhoneCall className="inline-block w-4 h-4 mr-1" /> User Phone</TableHead>
+                  <TableHead><CalendarDays className="inline-block w-4 h-4 mr-1" /> Booking Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {bookings.map((booking) => (
+                  <TableRow key={booking.id}>
+                    <TableCell className="font-medium">{booking.propertyName}</TableCell>
+                    <TableCell>{booking.userName}</TableCell>
+                    <TableCell>{booking.userPhone}</TableCell>
+                    <TableCell>{new Date(booking.bookingDate).toLocaleString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

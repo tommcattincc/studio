@@ -13,7 +13,7 @@ export interface Property {
   uniqueFeatures: string[]; // List of unique features
   description: string;
   imageUrl: string;
-  dateAdded: string; // ISO date string
+  dateAdded: string; // ISO date string, can be Firestore Timestamp in future
 }
 
 // For AI description generation, mapping to existing schema
@@ -29,4 +29,13 @@ export interface GeneratePropertyDescriptionInput {
 
 export interface GeneratePropertyDescriptionOutput {
   description: string;
+}
+
+export interface Booking {
+  id: string;
+  propertyId: string;
+  propertyName: string; // For easier display on admin page
+  userName: string;
+  userPhone: string;
+  bookingDate: string; // ISO date string
 }

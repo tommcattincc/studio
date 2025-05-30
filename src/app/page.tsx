@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import type { Property } from '@/lib/types';
-import { getProperties } from '@/lib/actions';
+import { getPropertiesRealtime } from '@/lib/data'; // Updated to use realtime function
 import { PropertyList } from '@/components/property/PropertyList';
 import { PropertyFilterSort } from '@/components/property/PropertyFilterSort';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,7 +18,7 @@ function HeroSection() {
         layout="fill"
         objectFit="cover"
         className="z-0"
-        priority // Add priority to hint Next.js to load this LCP image faster
+        priority
         data-ai-hint="modern interior"
       />
       <div className="absolute inset-0 bg-black/50 z-10 flex flex-col items-center justify-center text-center p-4">
@@ -38,29 +38,26 @@ export default function HomePage() {
   const [displayedProperties, setDisplayedProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchAndSetProperties = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const properties = await getProperties();
-      const sortedProperties = [...properties].sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
-      setAllProperties(sortedProperties);
-      setDisplayedProperties(sortedProperties);
-    } catch (error) {
-      console.error("Failed to fetch properties:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchAndSetProperties();
-  }, [fetchAndSetProperties]);
+    setIsLoading(true);
+    const unsubscribe = getPropertiesRealtime((properties) => {
+      setAllProperties(properties);
+      // Initially display all properties, filters can override this
+      setDisplayedProperties(properties); 
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe(); // Cleanup subscription on component unmount
+  }, []);
 
   const handleFilterChange = (filteredProperties: Property[]) => {
     setDisplayedProperties(filteredProperties);
   };
+  
+  // Show loading skeleton if loading OR if properties haven't arrived yet but we expect them
+  const showInitialLoadingSkeleton = isLoading && allProperties.length === 0;
 
-  if (isLoading && !allProperties.length) { 
+  if (showInitialLoadingSkeleton) { 
     return (
       <>
         <HeroSection />
@@ -68,17 +65,22 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold tracking-tight text-center">
             Discover Your Next <span className="text-primary">Property</span>
           </h2>
-          <Skeleton className="h-40 w-full mb-8" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="flex flex-col space-y-3">
-                <Skeleton className="h-[200px] w-full rounded-xl" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-[250px]" />
-                  <Skeleton className="h-4 w-[200px]" />
+          <Skeleton className="h-40 w-full mb-8 rounded-lg" /> {/* Filter sort skeleton */}
+          <div className="pt-4">
+            <h3 className="text-2xl font-semibold mb-6 text-center md:text-left">
+             Explore Our Listings
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="flex flex-col space-y-3">
+                  <Skeleton className="h-[200px] w-full rounded-xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </>
@@ -98,7 +100,8 @@ export default function HomePage() {
           <h3 className="text-2xl font-semibold mb-6 text-center md:text-left">
             Explore Our Listings
           </h3>
-          {isLoading && displayedProperties.length === 0 ? (
+          {/* Show skeleton if filtering is in progress (isLoading true but some properties might exist) OR if no properties after load */}
+          {isLoading && displayedProperties.length === 0 && allProperties.length > 0 ? (
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
              {[...Array(4)].map((_, i) => (
                <div key={i} className="flex flex-col space-y-3">

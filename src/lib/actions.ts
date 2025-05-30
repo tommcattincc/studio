@@ -1,9 +1,14 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import type { Property, GeneratePropertyDescriptionInput as GenDescInputType } from './types';
-import { getPropertiesFromStore, addPropertyToStore } from './data';
+import type { Property, GeneratePropertyDescriptionInput as GenDescInputType, Booking } from './types';
+import { 
+  addPropertyToFirestore, 
+  getPropertiesFromStore, // Keep for non-realtime if needed, or switch to a realtime setup action
+  addBookingToFirestore
+} from './data'; // Updated to use Firestore
 import { generatePropertyDescription as genkitGenerateDescription } from '@/ai/flows/generate-property-description';
 
 // Schema for adding a new property
@@ -22,7 +27,11 @@ const AddPropertySchema = z.object({
   imageUrl: z.string().url('Image URL must be a valid URL').optional().or(z.literal('')),
 });
 
+// This action now serves more as an initial fetch if needed,
+// but primary data loading in components should use realtime listeners.
 export async function getProperties(): Promise<Property[]> {
+  // For server components or initial load, this can fetch once.
+  // Client components will use getPropertiesRealtime via useEffect.
   return getPropertiesFromStore();
 }
 
@@ -39,23 +48,22 @@ export async function addPropertyAction(formData: FormData) {
   }
 
   const data = validatedFields.data;
-  const newProperty: Property = {
-    id: Date.now().toString(), // Simple ID generation
+  const newPropertyData = {
     ...data,
     imageUrl: data.imageUrl || `https://placehold.co/600x400.png`, // Default placeholder
-    dateAdded: new Date().toISOString(),
   };
 
   try {
-    addPropertyToStore(newProperty);
-    revalidatePath('/');
+    // dateAdded will be handled by addPropertyToFirestore
+    const addedProperty = await addPropertyToFirestore(newPropertyData as Omit<Property, 'id' | 'dateAdded'>);
+    revalidatePath('/'); // May not be strictly necessary with realtime updates, but good for SSR/ISR
     revalidatePath('/admin');
     return {
-      message: 'Property added successfully!',
-      property: newProperty,
+      message: 'Property added successfully to Firestore!',
+      property: addedProperty,
     };
   } catch (error) {
-    console.error('Failed to add property:', error);
+    console.error('Failed to add property to Firestore:', error);
     return {
       message: 'Database Error: Failed to add property.',
     };
@@ -70,12 +78,51 @@ export async function generateDescriptionAction(input: GenDescInputType): Promis
       bedrooms: Number(input.bedrooms),
       bathrooms: Number(input.bathrooms),
       squareFootage: Number(input.squareFootage),
-      amenities: input.amenities, // Already a comma-separated string from form
-      uniqueFeatures: input.uniqueFeatures, // Already a comma-separated string from form
+      amenities: input.amenities, 
+      uniqueFeatures: input.uniqueFeatures,
     });
     return { description: result.description };
   } catch (error) {
     console.error('AI description generation failed:', error);
     return { error: 'Failed to generate description. Please try again.' };
+  }
+}
+
+// Schema for creating a booking
+const CreateBookingSchema = z.object({
+  propertyId: z.string().min(1, "Property ID is required"),
+  propertyName: z.string().min(1, "Property name is required"),
+  userName: z.string().min(2, "User name must be at least 2 characters"),
+  userPhone: z.string().min(5, "Phone number must be at least 5 characters"), // Simple validation
+});
+
+export async function createBookingAction(data: {
+  propertyId: string;
+  propertyName: string;
+  userName: string;
+  userPhone: string;
+}) {
+  const validatedFields = CreateBookingSchema.safeParse(data);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Failed to create booking due to validation errors.',
+    };
+  }
+  
+  try {
+    const newBooking = await addBookingToFirestore(validatedFields.data);
+    // Revalidate admin path if it shows bookings, not strictly needed for client-side realtime
+    revalidatePath('/admin'); 
+    return {
+      message: 'Booking created successfully!',
+      booking: newBooking,
+    };
+  } catch (error) {
+    console.error('Failed to create booking:', error);
+    return {
+      message: 'Database Error: Failed to create booking.',
+    };
   }
 }

@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { addPropertyAction, generateDescriptionAction } from '@/lib/actions';
+import { addPropertyAction, generateDescriptionAction } from '@/lib/actions'; // Ensure this uses Firestore
 import type { GeneratePropertyDescriptionInput } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
@@ -22,7 +23,7 @@ const propertyFormSchema = z.object({
   location: z.string().min(2, 'Location is required (e.g., City name)'),
   price: z.coerce.number().positive('Price must be a positive number'),
   bedrooms: z.coerce.number().min(0, 'Bedrooms cannot be negative'),
-  bathrooms: z.coerce.number().min(0, 'Bathrooms cannot be negative'),
+  bathrooms: z.coerce.number().min(0, 'Bathrooms cannot be negative').step(0.5, "Must be a valid number of bathrooms (e.g. 1, 1.5, 2)"),
   squareFootage: z.coerce.number().positive('Square footage must be positive'),
   amenities: z.string().min(1, 'Enter at least one amenity, comma-separated'),
   uniqueFeatures: z.string().min(1, 'Enter at least one unique feature, comma-separated'),
@@ -60,10 +61,9 @@ export function PropertyForm({ onPropertyAdded }: { onPropertyAdded: () => void 
       formData.append(key, String(value));
     });
 
-    const result = await addPropertyAction(formData);
+    const result = await addPropertyAction(formData); // This action now saves to Firestore
 
     if (result?.errors) {
-      // Handle field-specific errors if necessary, though react-hook-form does this.
       toast({
         title: 'Error adding property',
         description: result.message || 'Please check the form for errors.',
@@ -81,7 +81,7 @@ export function PropertyForm({ onPropertyAdded }: { onPropertyAdded: () => void 
         description: result?.message || 'Property added successfully.',
       });
       form.reset();
-      onPropertyAdded(); // Callback to refresh property list
+      onPropertyAdded(); // Callback, though realtime might handle UI update
     }
   }
 
@@ -105,7 +105,7 @@ export function PropertyForm({ onPropertyAdded }: { onPropertyAdded: () => void 
       bedrooms: Number(bedrooms),
       bathrooms: Number(bathrooms),
       squareFootage: Number(squareFootage),
-      amenities: amenities, // These are already strings from the form
+      amenities: amenities, 
       uniqueFeatures: uniqueFeatures,
     };
 
