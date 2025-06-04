@@ -1,17 +1,17 @@
-// src/lib/firebaseConfig.ts
-// IMPORTANT: Replace these with your actual Firebase project configuration!
-// You can find this in your Firebase project settings.
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID" // Optional
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyADMXJ883POJeGCo7TmRjWd4EqLBmJEScw",
+  authDomain: "propspot-a5ofg.firebaseapp.com",
+  projectId: "propspot-a5ofg",
+  storageBucket: "propspot-a5ofg.firebasestorage.app",
+  messagingSenderId: "470981025762",
+  appId: "1:470981025762:web:22a08a7d9c99c2f8e323bb"
 };
 
-// Ensure all required fields are filled before using this config.
-// If you don't have a value for a field (e.g., measurementId),
-// you can comment it out or remove it if your Firebase setup doesn't require it.
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
